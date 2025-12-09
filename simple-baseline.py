@@ -6,6 +6,8 @@ import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import re
 from data_loader import load_gsm8k_test, load_math500_test, load_aime_test, load_amc23_test, MathSample
+import os
+import torch.distributed as dist
 
 def load_dataset(name, data_root="data"):
     if name == "gsm8k":
@@ -76,72 +78,124 @@ def split_prediction(output_ids, tokenizer):
     return thinking_content, content
 
 
+def init_distributed():
+    if "WORLD_SIZE" in os.environ and int(os.environ["WORLD_SIZE"]) > 1:
+        dist.init_process_group(backend="nccl")
+        world_size = dist.get_world_size()
+        rank = dist.get_rank()
+        local_rank = int(os.environ.get("LOCAL_RANK", rank))
+    else:
+        world_size = 1
+        rank = 0
+        local_rank = 0
+    return rank, world_size, local_rank
+
 def simple_baseline(args):
     dataset = args.dataset
     data_root = args.data_root
     device = args.device
     model_name = args.model_name
-    output_path = args.output_path
+    output_path = Path(args.output_path)
+    batch_size = args.batch_size
 
-    samples = load_dataset(dataset, data_root)
-    print(f"Loaded {len(samples)} samples!")
+    rank, world_size, local_rank = init_distributed()
+    is_main = (rank == 0)
+
+    if is_main:
+        print(f"World size = {world_size}")
+    print(f"Rank {rank}: starting strong_baseline on dataset={dataset}")
+
+    all_samples = load_dataset(dataset, data_root)
+    total = len(all_samples)
+    if is_main:
+        print(f"Loaded {total} samples!")
+        
+    samples = [s for i, s in enumerate(all_samples) if i % world_size == rank]
+    local_total = len(samples)
+    print(f"Rank {rank}: local samples = {local_total}")
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    shard_path = output_path.with_suffix(output_path.suffix + f".rank{rank}")
+    if is_main:
+        print(f"Rank {rank}: writing to {shard_path}")
+
+    if torch.cuda.is_available():
+        device = torch.device(f"cuda:{local_rank}")
+    else:
+        device = torch.device("cpu")
+    print(f"Rank {rank}: using device: {device}")
 
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     tokenizer.pad_token = tokenizer.eos_token
+    tokenizer.padding_side = "left"
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
-        dtype="auto",
-        device_map="auto"
-    )
+        dtype="auto"
+    ).to(device)
 
     print(f"Loaded model: {model_name}")
     model.eval()
 
-    output_path = Path(output_path)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with torch.no_grad(), shard_path.open("w", encoding="utf-8") as fout:
 
-    with torch.no_grad(), output_path.open("w", encoding="utf-8") as fout:
-        for idx, s in enumerate(samples, start=1):
-            print(f"Inference {idx}/{len(samples)}")
+        for start in range(0, len(samples), batch_size):
+            end = min(start + batch_size, len(samples))
+            batch = samples[start:end]
+            print(f"Rank {rank}: Inference {start+1} - {end} / {len(samples)}")
 
-            messages = build_messages(s)
-            text = tokenizer.apply_chat_template(
-                messages,
-                tokenize=False,
-                add_generation_prompt=True
-            )
+            texts = []
+            ids = []
+            datasets = []
 
-            model_inputs = tokenizer([text], return_tensors="pt").to(device)
+            for s in batch:
+                messages = build_messages(s)
+                text = tokenizer.apply_chat_template(
+                    messages,
+                    tokenize=False,
+                    add_generation_prompt=True
+                )
+                texts.append(text)
+                ids.append(s.id)
+                datasets.append(s.dataset)
+
+            model_inputs = tokenizer(texts, return_tensors="pt", padding=True, truncation=False).to(device)
 
             generated_ids = model.generate(
                 **model_inputs,
-                max_new_tokens=1024,
+                max_new_tokens=512,
                 pad_token_id=tokenizer.pad_token_id,
             )
 
-            generated_ids = [
-                output_ids[len(input_ids):] for input_ids, output_ids in zip(model_inputs.input_ids, generated_ids)
-            ]
-            thinking, content = split_prediction(generated_ids, tokenizer)
+            batch_outputs = []
+            for input_ids, output_ids in zip(model_inputs.input_ids, generated_ids):
+                new_tokens = output_ids[len(input_ids):]
+                batch_outputs.append(new_tokens.unsqueeze(0))
 
-            record = {
-                "id": s.id,
-                "dataset": s.dataset,
-                "thinking": thinking,
-                "content": content
-            }
-            print(record["content"])
-            fout.write(json.dumps(record, ensure_ascii=False) + "\n")
+            for i, out_ids in enumerate(batch_outputs):
+                thinking, content = split_prediction(out_ids, tokenizer)
 
-    print(f"Saved predictions to: {output_path}")
+                record = {
+                    "id": ids[i],
+                    "dataset": datasets[i],
+                    "thinking": thinking,
+                    "content": content
+                }
+                fout.write(json.dumps(record, ensure_ascii=False) + "\n")
+                print(f"Rank {rank}: {record['id']} -> {record['content']}")
+
+    print(f"Rank {rank}: Finished")
+
+    if world_size > 1:
+        dist.barrier()
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--dataset", type=str, default="math500",choices=["gsm8k", "math500", "aime", "amc23"])
+    parser.add_argument("--dataset", type=str, default="math500", choices=["gsm8k", "math500", "aime", "amc23"])
     parser.add_argument("--model_name", type=str, default="Qwen/Qwen2-1.5b")
     parser.add_argument("--data_root", type=str, default="data")
+    parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--output_path", type=str, default="outputs/output.jsonl")
     parser.add_argument("--device", type=str, default="cuda")
 
