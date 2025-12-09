@@ -157,17 +157,17 @@ For other dataset, just change the arguments with the specific dataset you want 
 
 ## 6. Result for Baseline & Strong-Baseline
 
-   Dataset  | Metric        | Baseline |    Strong-Baseline   |
-| --------- | ------------- | -------- | -------------------- |
-| gsm8k     | **Accuracy**  | 0.5537   | 0.5722               |
-| gsm8k     | **Word Count**| 435.63   | 514.87               |
-| gsm8k     | **Critic**    | 2.333    | 3.11                 |
-| math500   | **Accuracy**  | 0.208    | 0.140                |
-| math500   | **Word Count**| 383.62   | 237.72               |
-| math500   | **Critic**    | 2.280    | 2.360                |
-| aime      | **Accuracy**  | 0        | 0                    |
-| aime      | **Word Count**| 496.27   | 453.63               |
-| aime      | **Critic**    | 1.067    | 1.082                |
-| amc23     | **Accuracy**  | 0.125    | 0.0750               |
-| amc23     | **Word Count**| 437.73   | 376.44               |
-| amc23     | **Critic**    | -        | -                    |
+   Dataset  | Metric        | Baseline |    Strong-Baseline   |    Extension-1    |
+| --------- | ------------- | -------- | -------------------- | ----------------- |
+| gsm8k     | **Accuracy**  | 0.5512   | 0.5390               | 0.5739            |
+| gsm8k     | **Word Count**| 282.73   | 319.75               | 216.42            |
+| gsm8k     | **Critic**    | 2.333    | 3.11                 | 3.89              |
+| math500   | **Accuracy**  | 0.1880   | 0.1980               | 0.2000            |
+| math500   | **Word Count**| 234.29   | 198.96               | 157.12            |
+| math500   | **Critic**    | 2.280    | 2.360                | 2.550             |
+| aime      | **Accuracy**  | 0        | 0                    | 0                 |
+| aime      | **Word Count**| 257.23   | 453.63               | 245.47            |
+| aime      | **Critic**    | 1.067    | 1.082                | 1.071             |
+| amc23     | **Accuracy**  | 0.125    | 0.1750               | 0.1500            |
+| amc23     | **Word Count**| 274.23   | 376.44               | 245.45            |
+| amc23     | **Critic**    | -        | -                    |                   |

@@ -56,27 +56,40 @@ def math_verify_equal(gold_str, pred_str):
     return verify(gold_parsed, pred_parsed)
 
 
-def compute_accuracy(gold_samples, pred_outputs, content_key="content"):
-    assert len(gold_samples) == len(pred_outputs)
+def compute_accuracy(gold_samples, pred_records, content_key="content"):
+    pred_by_id = {}
+    for rec in pred_records:
+        rid = rec.get("id", None)
+        if rid is not None:
+            pred_by_id[rid] = rec
 
     correct = 0
-    total = len(gold_samples)
+    total = 0
 
-    for g, pred_text in zip(gold_samples, pred_outputs):
+    for g in gold_samples:
+        gid = getattr(g, "id", None)
+        if gid is None:
+            continue
+        if gid not in pred_by_id:
+            total += 1
+            continue
+
+        pred_rec = pred_by_id[gid]
         gold_str = g.gold_answer
-        pred_str = extract_final_answer(pred_text, content_key)
+        pred_str = extract_final_answer(pred_rec, content_key)
 
         try:
             is_correct = math_verify_equal(gold_str, pred_str)
-        except Exception as e:
-            print(f"Directly using exact match")
+        except Exception:
             is_correct = (normalize_answer(gold_str) == normalize_answer(pred_str))
 
+        total += 1
         if is_correct:
             correct += 1
 
     accuracy = correct / total if total > 0 else 0.0
     return accuracy, correct, total
+
 
 
 def compute_avg_word_count(pred_records, content_key="content"):
