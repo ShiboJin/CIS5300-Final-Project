@@ -61,14 +61,14 @@ python filter-teacher-cot.py \
 We use the LLaMa-Factory to do the sft, here is the command:
 
 ```
-torchrun --standalone --nproc_per_node=4 src/train.py \
+torchrun --standalone --nproc_per_node=1 src/train.py \
     --stage sft \
     --do_train \
     --do_eval \
     --use_fast_tokenizer \
     --model_name_or_path "Qwen/Qwen2-1.5B" \
     --template qwen \
-    --dataset "gsm8k_train_distilled" \
+    --dataset "gsm8k_teacher_train" \
     --eval_dataset "gsm8k_dev_ours" \
     --dataset_dir "data" \
     --finetuning_type lora \
@@ -77,7 +77,7 @@ torchrun --standalone --nproc_per_node=4 src/train.py \
     --overwrite_cache \
     --overwrite_output_dir \
     --cutoff_len 2048 \
-    --per_device_train_batch_size 8 \
+    --per_device_train_batch_size 128 \
     --gradient_accumulation_steps 4 \
     --learning_rate 1e-5 \
     --lr_scheduler_type cosine \

@@ -133,7 +133,7 @@ def strong_baseline(args):
 
     model = AutoModelForCausalLM.from_pretrained(
         base_model,
-        dtype="auto",
+        # dtype="auto",
     ).to(device)
 
     model = PeftModel.from_pretrained(model, lora_path).to(device)
@@ -202,13 +202,16 @@ def strong_baseline(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--dataset", type=str, default="math500", choices=["gsm8k", "math500", "aime", "amc23"])
+    parser.add_argument("--dataset", type=str, default="gsm8k", choices=["gsm8k", "math500", "aime", "amc23"])
     parser.add_argument("--base_model", type=str, default="Qwen/Qwen2-1.5B")
-    parser.add_argument("--lora_path", type=str, required=True)
+    parser.add_argument("--lora_path", type=str,  default="/vast/projects/jgu32/lab/yao/Models/qwen2-1.5b_lora_gsm8k_teacher_train")
     parser.add_argument("--data_root", type=str, default="data")
-    parser.add_argument("--batch_size", type=int, default=32)
-    parser.add_argument("--output_path", type=str, default="outputs/output.jsonl")
+    parser.add_argument("--batch_size", type=int, default=512)
+    parser.add_argument("--output_path", type=str, default="outputs/output_teacher_train_evaled_gsm8k.jsonl")
     parser.add_argument("--device", type=str, default="cuda")
 
     args = parser.parse_args()
-    strong_baseline(args)
+    for dataset in ["gsm8k", "aime", "amc23"]:
+        args.dataset = dataset
+        args.output_path = f"outputs/output_teacher_train_evaled_{dataset}.jsonl"
+        strong_baseline(args)
