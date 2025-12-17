@@ -157,17 +157,17 @@ For other dataset, just change the arguments with the specific dataset you want 
 
 ## 6. Result for Baseline & Strong-Baseline
 
-   Dataset  | Metric        | Baseline |    Strong-Baseline   |    Extension-1    |
-| --------- | ------------- | -------- | -------------------- | ----------------- |
-| gsm8k     | **Accuracy**  | 0.5512   | 0.5390               | 0.5739            |
-| gsm8k     | **Word Count**| 282.73   | 319.75               | 216.42            |
-| gsm8k     | **Critic**    | 2.333    | 3.11                 | 3.89              |
-| math500   | **Accuracy**  | 0.1880   | 0.1980               | 0.2000            |
-| math500   | **Word Count**| 234.29   | 198.96               | 157.12            |
-| math500   | **Critic**    | 2.280    | 2.360                | 2.550             |
-| aime      | **Accuracy**  | 0        | 0                    | 0                 |
-| aime      | **Word Count**| 257.23   | 453.63               | 245.47            |
-| aime      | **Critic**    | 1.067    | 1.082                | 1.071             |
-| amc23     | **Accuracy**  | 0.125    | 0.1750               | 0.1500            |
-| amc23     | **Word Count**| 274.23   | 376.44               | 245.45            |
-| amc23     | **Critic**    | -        | -                    |                   |
+   Dataset  | Metric        | Baseline | Strong-Baseline | Ext1  | Ext2(Noisy)| Ext2(0.8) | Ext2(0.5) |
+| --------- | ------------- | -------- | --------------- | ----- | ---------- | --------- | --------- |
+| gsm8k     | **Accuracy**  | 0.5512   | 0.5390          | 0.574 | 0.463      | 0.579     | 0.568     |
+| gsm8k     | **Word Count**| 282.73   | 319.75          | 216.4 | 231.8      | 197.84    | 212.8     |
+| gsm8k     | **Critic**    | 2.333    | 3.11            | 3.89  | 2.1        | 4.06      | 3.66      |
+| math500   | **Accuracy**  | 0.1880   | 0.1980          | 0.200 | 0.150      | 0.2040    | 0.192     |
+| math500   | **Word Count**| 234.29   | 198.96          | 157.1 | 218.3      | 193.89    | 192.4     |
+| math500   | **Critic**    | 2.280    | 2.360           | 2.550 | 1.939      | 2.531     | 2.11      |
+| aime      | **Accuracy**  | 0        | 0               | 0     | 0          | 0         | 0         |
+| aime      | **Word Count**| 257.23   | 453.63          | 245.5 | 230.73     | 267.93    | 253.37    |
+| aime      | **Critic**    | 1.067    | 1.082           | 1.071 | 1.022      | 1.1       | 1.037     |
+| amc23     | **Accuracy**  | 0.125    | 0.1750          | 0.150 | 0.025      | 0.0750    | 0.075     |
+| amc23     | **Word Count**| 274.23   | 376.44          | 245.5 | 219.57     | 220.05    | 235.55    |
+| amc23     | **Critic**    | -        | -               | -     | -          | -         | -         |

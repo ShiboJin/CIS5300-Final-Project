@@ -7,17 +7,17 @@ import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
 
-def extract_gold_answer(old_answer: str) -> str:
+def extract_gold_answer(old_answer):
     m = re.search(r"####\s*([^\n]+)", old_answer)
     if not m:
         return ""
     return m.group(1).strip()
 
-def strip_think_block(text: str) -> str:
+def strip_think_block(text):
     text = re.sub(r"<think>.*?</think>\s*", "", text, flags=re.DOTALL)
     return text.strip()
 
-def build_messages(question: str, old_cot: str, gold_answer: str):
+def build_messages(question, old_cot, gold_answer):
     system_prompt = (
         "You are an expert math tutor.\n"
         "Given a math word problem, an existing solution, and the correct final numeric answer, "
@@ -50,13 +50,7 @@ def build_messages(question: str, old_cot: str, gold_answer: str):
     return messages
 
 
-def regenerate_cot(
-    input_path: str,
-    output_path: str,
-    model_name: str = "Qwen/Qwen3-8B",
-    batch_size: int = 4,
-    max_new_tokens: int = 512,
-):
+def regenerate_cot(input_path, output_path, model_name="Qwen/Qwen3-8B", batch_size=4, max_new_tokens=512):
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"Loading teacher model: {model_name} on {device}")
 
@@ -68,8 +62,8 @@ def regenerate_cot(
 
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
-        torch_dtype=torch.float16 if device.startswith("cuda") else torch.float32,
-        device_map="auto" if device.startswith("cuda") else None,
+        torch_dtype=torch.float16,
+        device_map="auto",
     )
     model.eval()
     torch.set_grad_enabled(False)
@@ -106,12 +100,10 @@ def regenerate_cot(
                 gold_ans = extract_gold_answer(old_cot)
 
                 if gold_ans == "":
-                    print("WARNING: no gold answer found, skipping example.")
                     continue
 
                 messages = build_messages(q, old_cot, gold_ans)
-                text = tokenizer.apply_chat_template(
-                    messages,
+                text = tokenizer.apply_chat_template(messages,
                     tokenize=False,
                     add_generation_prompt=True,
                     # enable_thinking=False
@@ -127,29 +119,15 @@ def regenerate_cot(
             if not texts:
                 continue
 
-            model_inputs = tokenizer(
-                texts,
-                return_tensors="pt",
-                padding=True,
-                truncation=True,
-                max_length=4096,
-            ).to(model.device)
+            model_inputs = tokenizer(texts, return_tensors="pt", padding=True, truncation=True, max_length=4096).to(model.device)
 
             with torch.no_grad():
-                gen_ids = model.generate(
-                    **model_inputs,
-                    max_new_tokens=max_new_tokens,
-                    do_sample=False,
-                    temperature=0.0,
-                    pad_token_id=tokenizer.pad_token_id,
-                )
+                gen_ids = model.generate(**model_inputs, max_new_tokens=max_new_tokens, do_sample=False, temperature=0.0, pad_token_id=tokenizer.pad_token_id)
 
             for i in range(len(texts)):
                 input_len = model_inputs.input_ids[i].shape[0]
                 output_ids = gen_ids[i][input_len:]
-                new_cot = tokenizer.decode(
-                    output_ids, skip_special_tokens=True
-                ).strip()
+                new_cot = tokenizer.decode(output_ids, skip_special_tokens=True).strip()
 
                 m = re.search(r"####\s*[^\n]+", new_cot)
                 if m:
@@ -177,7 +155,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--input_path", type=str, required=True)
     parser.add_argument("--output_path", type=str, required=True)
-    parser.add_argument("--model_name", type=str, default="Qwen/Qwen3-8B", help="teacher 模型名称")
+    parser.add_argument("--model_name", type=str, default="Qwen/Qwen3-8B")
     parser.add_argument("--batch_size", type=int, default=4)
     parser.add_argument("--max_new_tokens", type=int, default=512)
 

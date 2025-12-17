@@ -211,7 +211,4 @@ if __name__ == "__main__":
     parser.add_argument("--device", type=str, default="cuda")
 
     args = parser.parse_args()
-    for dataset in ["gsm8k", "aime", "amc23"]:
-        args.dataset = dataset
-        args.output_path = f"outputs/output_teacher_train_evaled_{dataset}.jsonl"
-        strong_baseline(args)
+    strong_baseline(args)

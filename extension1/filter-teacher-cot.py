@@ -4,7 +4,7 @@ import argparse
 from pathlib import Path
 
 
-def extract_teacher_cot(sample) -> str:
+def extract_teacher_cot(sample):
     ans = sample.get("answer", "")
     m = re.search(r"(.*)####", ans, re.S)
     if not m:
@@ -12,14 +12,14 @@ def extract_teacher_cot(sample) -> str:
     return m.group(1).strip()
 
 
-def extract_final_answer_text(ans: str) -> str:
+def extract_final_answer_text(ans):
     m = re.search(r"####\s*([^\n]+)", ans)
     if not m:
         return ""
     return m.group(1).strip()
 
 
-def normalize_number_string(s: str) -> str:
+def normalize_number_string(s):
     if not s:
         return ""
 
@@ -50,7 +50,7 @@ BANNED_PHRASES = [
 ]
 
 
-def is_low_quality_cot(cot: str) -> bool:
+def is_low_quality_cot(cot):
     cot_lower = cot.lower().strip()
 
     for p in BANNED_PHRASES:
@@ -63,7 +63,7 @@ def is_low_quality_cot(cot: str) -> bool:
     return False
 
 
-def filter_teacher_cot_only(input_path: str, output_path: str):
+def filter_teacher_cot_only(input_path, output_path):
 
     input_path = Path(input_path)
     output_path = Path(output_path)
